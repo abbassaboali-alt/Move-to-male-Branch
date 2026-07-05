@@ -551,9 +551,17 @@ tr.dup-row{background:#ffebee !important}
 <script>
 /* ================= Logout + Protection ================= */
 
+const IS_INSIDE_IFRAME = window.parent && window.parent !== window;
+
 function goLogin(){
   localStorage.clear();
   sessionStorage.clear();
+
+  if(IS_INSIDE_IFRAME){
+    window.parent.postMessage("PRUDLE_LOGOUT","*");
+    return;
+  }
+
   location.replace("https://www.prudle-education.com/log-in-out");
 }
 
@@ -561,12 +569,31 @@ function logout(){
   localStorage.clear();
   sessionStorage.clear();
 
-  if(window.parent && window.parent !== window){
+  if(IS_INSIDE_IFRAME){
     window.parent.postMessage("PRUDLE_LOGOUT","*");
+    return;
   }
 
   location.replace("https://www.prudle-education.com/log-in-out");
 }
+
+(function(){
+
+  if(!IS_INSIDE_IFRAME) return;
+
+  window.addEventListener("message", function(e){
+
+    const d = e.data || {};
+
+    if(d.type !== "PRUDLE_AUTH") return;
+
+    localStorage.setItem("username", d.username || "");
+    localStorage.setItem("role", d.role || "");
+    localStorage.setItem("loginDate", d.loginDate || "");
+
+  });
+
+})();
 /* ================= Prevent Submit (Weebly) ================= */
 document.addEventListener("submit", function(e){
   e.preventDefault();
