@@ -1,0 +1,61 @@
+<script>
+(function () {
+  "use strict";
+  const LOGIN_URL = "https://www.prudle-education.com/log-in-out";
+  const IFRAME_ORIGIN = "https://abbassaboali-alt.github.io";
+  const IFRAME_URL = IFRAME_ORIGIN + "/Move-to-male-Branch/";
+
+  function logoutAll() {
+    localStorage.clear();
+    sessionStorage.clear();
+    window.top.location.replace(LOGIN_URL);
+  }
+
+  function checkLoginOnly() {
+    const user = localStorage.getItem("username");
+    const role = localStorage.getItem("role");
+    const last = localStorage.getItem("loginDate");
+    const today = new Date().toDateString();
+    if (!user || role !== "admin" || last !== today) {
+      document.getElementById("prudle-male-frame")?.remove();
+      logoutAll();
+      return false;
+    }
+    return true;
+  }
+
+  window.addEventListener("message", function (event) {
+    const frame = document.getElementById("prudle-male-frame");
+    if (event.origin !== IFRAME_ORIGIN || event.source !== frame?.contentWindow) return;
+    if (event.data === "PRUDLE_LOGOUT") logoutAll();
+  });
+
+  function init() {
+    if (!checkLoginOnly()) return;
+    const frame = document.getElementById("prudle-male-frame");
+    if (frame) {
+      frame.src = IFRAME_URL;
+      frame.addEventListener("load", function () {
+        if (!checkLoginOnly()) return;
+        frame.contentWindow.postMessage({
+          type: "PRUDLE_AUTH",
+          username: localStorage.getItem("username") || "",
+          role: localStorage.getItem("role") || "",
+          loginDate: localStorage.getItem("loginDate") || ""
+        }, IFRAME_ORIGIN);
+      });
+    }
+  }
+
+  window.addEventListener("pageshow", checkLoginOnly);
+  document.addEventListener("visibilitychange", function () {
+    if (!document.hidden) checkLoginOnly();
+  });
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
+  else init();
+})();
+</script>
+<iframe id="prudle-male-frame" title="Prudle - Move to Male Branch"
+  allow="microphone; camera"
+  style="width:100%;height:100vh;border:none;display:block;"
+></iframe>
